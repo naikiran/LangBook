@@ -27,7 +27,7 @@
 
   const mongoose = require('mongoose');
 
-  mongoose.connect('mongodb+srv://kirangohil652:c3LEmB5NuxjyIszO@langbook.zeqvfp2.mongodb.net/LangBook')
+  mongoose.connect('mongodb+srv://kirangohil652:c3LEmB5NuxjyIszO@langbook.zeqvfp2.mongodb.net/LangBook', {useNewUrlParser: true, useUnifiedTopology: true})
     .then(() => console.log('Connected to MongoDB'))
     .catch((error) => console.log(error.message));
 
