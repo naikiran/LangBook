@@ -27,7 +27,7 @@
 
   const mongoose = require('mongoose');
 
-  mongoose.connect('mongodb://127.0.0.1:27017/langBook')
+  mongoose.connect('mongodb+srv://kirangohil652:c3LEmB5NuxjyIszO@langbook.zeqvfp2.mongodb.net/LangBook')
     .then(() => console.log('Connected to MongoDB'))
     .catch((error) => console.log(error.message));
 
