@@ -6,6 +6,7 @@ const LCD = require("../controller/langdetail");
 router.post("/create", LCD.create);
 router.get("/", LCD.getAll);
 router.get("/:id", LCD.getDetail);
+router.get("/language/:languageId", LCD.getDetailByLanguageId);
 router.put("/:id", LCD.update);
 router.delete("/:id", LCD.delete);
 

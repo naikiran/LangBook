@@ -107,3 +107,30 @@ exports.delete = async (req, res) => {
     });
   }
 };
+
+// Get language detail by language ID
+exports.getDetailByLanguageId = async (req, res) => {
+  try {
+    const detail = await LanguageDetail.findOne({ 
+      languageId: req.params.languageId 
+    }).populate("languageId");
+
+    if (!detail) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Language detail not found for this language",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Language detail found successfully",
+      data: detail,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
