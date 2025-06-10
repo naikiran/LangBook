@@ -1,5 +1,6 @@
     let ADMIN = require('../model/admin')
     let bcrypt = require('bcryptjs')
+    let jwt = require('jsonwebtoken')
 
     exports.signup = async function(req, res, next) {
         try {
@@ -22,7 +23,7 @@
 
     exports.login = async function(req, res, next) {
         try {
-
+            
             let userdata = await ADMIN.findOne({email : req.body.email})
             if(!userdata)
             {
@@ -33,11 +34,13 @@
             {
                 throw new Error('incorrect Password!')
             }
-
+            let token = jwt.sign({id : userdata._id}, process.env.JWT_SECRET)
+            
             res.status(201).json({
                 status : 'success',
                 message : 'user login successful',
-                data : userdata
+                data : userdata,
+                token 
             })
         } catch (error) {
             res.status(404).json({

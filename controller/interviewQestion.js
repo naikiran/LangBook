@@ -37,7 +37,13 @@ exports.getQuebyLang = async (req, res) => {
   try {
     let id = req.params.id;
     let codeData = await IQ.findById(id);
-    res.status(201).json({
+    if (!codeData) {
+      return res.status(404).json({
+        status: "fail",
+        message: "Question not found",
+      });
+    }
+    res.status(200).json({
       status: "success",
       message: "Question data found succesfully",
       data: codeData,
@@ -59,14 +65,14 @@ exports.delete = async (req, res) => {
         message: "Question not found",
       });
     }
-    res.status(204).json({
+    res.status(200).json({
       status: "success",
       message: "Question deleted successfully",
-      data: codeData,
+      data: question // Return the deleted question data
     });
   } catch (error) {
-    res.status(404).json({
-      status: "fail",
+    res.status(500).json({
+      status: "error",
       message: error.message,
     });
   }

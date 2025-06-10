@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 let CC = require('../controller/category')
 
+
 /* GET users listing. */
 router.post('/create', CC.create);
 router.get('/', CC.foundalldata);
