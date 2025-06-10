@@ -5,29 +5,46 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const cors = require("cors");
 require("dotenv").config();
-const swaggerUi = require("swagger-ui-express");
-const swaggerJsdoc = require("swagger-jsdoc");
-const swaggerOptions = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "My API",
-      version: "1.0.0",
-      description: "API documentation for my Express app",
-    },
-    servers: [
-      {
-        url: "http://localhost:3000", // Replace with your server URL
-      },
-    ],
-  },
-  apis: ["./routes/*.js"], // Path to the API docs (adjust as needed)
-};
 
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
+// Make Swagger optional
+let swaggerUi;
+let swaggerJsdoc;
+try {
+  swaggerUi = require("swagger-ui-express");
+  swaggerJsdoc = require("swagger-jsdoc");
+} catch (error) {
+  console.log("Swagger modules not available");
+}
 
 var app = express();
-app.use('/api', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Only setup Swagger if modules are available
+if (swaggerUi && swaggerJsdoc) {
+  const swaggerOptions = {
+    definition: {
+      openapi: "3.0.0",
+      info: {
+        title: "LangBook API",
+        version: "1.0.0",
+        description: "API documentation for LangBook Express app",
+      },
+      servers: [
+        {
+          url: process.env.API_URL || "http://localhost:3000",
+        },
+      ],
+    },
+    apis: ["./routes/*.js"],
+  };
+
+  try {
+    const swaggerSpec = swaggerJsdoc(swaggerOptions);
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    console.log("Swagger documentation available at /api-docs");
+  } catch (error) {
+    console.log("Error setting up Swagger:", error.message);
+  }
+}
 
 app.use(cors());
 
@@ -48,7 +65,7 @@ const mongoose = require("mongoose");
 
 mongoose
   .connect(
-    "mongodb+srv://kirangohil652:c3LEmB5NuxjyIszO@langbook.zeqvfp2.mongodb.net/LangBook",
+    process.env.MONGODB_URI || "mongodb+srv://kirangohil652:c3LEmB5NuxjyIszO@langbook.zeqvfp2.mongodb.net/LangBook",
     { useNewUrlParser: true, useUnifiedTopology: true }
   )
   .then(() => console.log("Connected to MongoDB"))
