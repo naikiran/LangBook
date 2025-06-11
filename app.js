@@ -1,45 +1,41 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
 const cors = require('cors');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
+const app = express();
 
-var app = express(); 
-
-app.use(cors());  
-
-app.use('/uploads', express.static('public/images'));
-
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-var codeRouter = require('./routes/code');
-var languageRouter = require('./routes/language');
-var vivaRouter = require('./routes/vivaQuestion');
-var interviewRouter = require('./routes/interviewQestion');
-var adminRouter = require('./routes/admin');
-var courseRouter = require('./routes/courses');
-const langdetail = require("./routes/langdetail");
-var categoryRouter = require('./routes/category');
-
-
-const mongoose = require('mongoose');
-
-mongoose.connect('"mongodb+srv://kirangohil652:c3LEmB5NuxjyIszO@langbook.zeqvfp2.mongodb.net/LangBook"')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((error) => console.log(error.message));
-
-// View engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
-
+// Basic middleware
+app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static('public/images'));
+
+// Import routes
+const indexRouter = require('./routes/index');
+const usersRouter = require('./routes/users');
+const codeRouter = require('./routes/code');
+const languageRouter = require('./routes/language');
+const vivaRouter = require('./routes/vivaQuestion');
+const interviewRouter = require('./routes/interviewQestion');
+const adminRouter = require('./routes/admin');
+const courseRouter = require('./routes/courses');
+const langdetailRouter = require('./routes/langdetail');
+const categoryRouter = require('./routes/category');
+
+// MongoDB connection
+mongoose.connect('mongodb+srv://kirangohil652:c3LEmB5NuxjyIszO@langbook.zeqvfp2.mongodb.net/LangBook', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch((error) => console.error('MongoDB connection error:', error));
 
 // Routes
 app.use('/', indexRouter);
@@ -50,20 +46,23 @@ app.use('/vivaQuestion', vivaRouter);
 app.use('/Interview', interviewRouter);
 app.use('/admin', adminRouter);
 app.use('/courses', courseRouter);
-app.use('/langdetail',langdetail);
+app.use('/langdetail', langdetailRouter);
 app.use('/category', categoryRouter);
 
-// Catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+// Error handling
+app.use((req, res, next) => {
+  res.status(404).json({
+    status: 'error',
+    message: 'Route not found'
+  });
 });
 
-// Error handler
-app.use(function(err, req, res, next) {
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-  res.status(err.status || 500);
-  res.render('error');
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    status: 'error',
+    message: err.message || 'Internal server error'
+  });
 });
 
 module.exports = app;
