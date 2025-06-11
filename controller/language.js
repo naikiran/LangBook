@@ -30,7 +30,7 @@ exports.create = async (req, res) => {
     console.error('Error creating language:', error);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: 'Failed to create language'
     });
   }
 };
@@ -45,7 +45,7 @@ exports.getAllLanguages = async function(req, res) {
       const detail = await LanguageDetail.findOne({ languageId: lang._id });
       return {
         ...lang,
-        detailId: detail?._id // Add this field
+        detailId: detail?._id || null // Handle case where no detail exists
       };
     }));
 
@@ -55,13 +55,13 @@ exports.getAllLanguages = async function(req, res) {
       data: enhancedLanguages
     });
   } catch (error) {
+    console.error('Error fetching languages:', error);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: 'Failed to fetch languages'
     });
   }
 }
-
 
 // Get single language
 exports.getLanguage = async (req, res) => {
@@ -82,14 +82,14 @@ exports.getLanguage = async (req, res) => {
       status: 'success',
       data: {
         ...language.toObject(),
-        detail: detail
+        detail: detail || null // Handle case where no detail exists
       }
     });
   } catch (error) {
     console.error('Error fetching language:', error);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: 'Failed to fetch language'
     });
   }
 };
@@ -126,7 +126,7 @@ exports.update = async (req, res) => {
     console.error('Error updating language:', error);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: 'Failed to update language'
     });
   }
 };
@@ -157,7 +157,7 @@ exports.delete = async (req, res) => {
     console.error('Error deleting language:', error);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: 'Failed to delete language'
     });
   }
 };
