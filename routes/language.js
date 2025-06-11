@@ -8,7 +8,7 @@ const upload = multer({ storage });
 
 // Language CRUD routes
 router.post("/create", upload.single("image"), LC.create);
-router.get("/getall", LC.getAllLanguages);
+router.get("/", LC.getAllLanguages);
 router.get("/:id", LC.getLanguage);
 router.delete("/:id", LC.delete);
 router.put("/:id", upload.single("image"), LC.update);
