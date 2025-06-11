@@ -30,43 +30,61 @@ exports.create = async (req, res) => {
     console.error('Error creating language:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to create language'
+      message: error.message
     });
   }
 };
 
 // Get all languages
-exports.getAllLanguages = async function(req, res) {
+exports.getAllLanguages = async (req, res) => {
   try {
-    const languages = await LANGUAGE.find().lean();
-    
-    // Add detail IDs to response
-    const enhancedLanguages = await Promise.all(languages.map(async lang => {
-      const detail = await LanguageDetail.findOne({ languageId: lang._id });
-      return {
-        ...lang,
-        detailId: detail?._id || null // Handle case where no detail exists
-      };
+    // First get all languages
+    const languages = await LANGUAGE.find()
+      .select('name category description image createdAt updatedAt')
+      .lean();
+
+    // Then get their details separately
+    const enhancedLanguages = await Promise.all(languages.map(async (lang) => {
+      try {
+        const detail = await LanguageDetail.findOne({ languageId: lang._id })
+          .select('_id')
+          .lean();
+
+        return {
+          ...lang,
+          hasDetails: !!detail,
+          detailId: detail?._id
+        };
+      } catch (err) {
+        console.error(`Error fetching details for language ${lang._id}:`, err);
+        return {
+          ...lang,
+          hasDetails: false,
+          detailId: null
+        };
+      }
     }));
 
     res.status(200).json({
       status: 'success',
-      message: 'All languages fetched successfully',
+      count: enhancedLanguages.length,
       data: enhancedLanguages
     });
   } catch (error) {
     console.error('Error fetching languages:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to fetch languages'
+      message: error.message
     });
   }
-}
+};
 
 // Get single language
 exports.getLanguage = async (req, res) => {
   try {
-    const language = await LANGUAGE.findById(req.params.id);
+    const language = await LANGUAGE.findById(req.params.id)
+      .select('name category description image createdAt updatedAt')
+      .lean();
     
     if (!language) {
       return res.status(404).json({
@@ -76,20 +94,22 @@ exports.getLanguage = async (req, res) => {
     }
 
     // Get associated details
-    const detail = await LanguageDetail.findOne({ languageId: language._id });
+    const detail = await LanguageDetail.findOne({ languageId: language._id })
+      .select('-__v')
+      .lean();
 
     res.status(200).json({
       status: 'success',
       data: {
-        ...language.toObject(),
-        detail: detail || null // Handle case where no detail exists
+        ...language,
+        detail: detail || null
       }
     });
   } catch (error) {
     console.error('Error fetching language:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to fetch language'
+      message: error.message
     });
   }
 };
@@ -97,18 +117,23 @@ exports.getLanguage = async (req, res) => {
 // Update language
 exports.update = async (req, res) => {
   try {
-    const updateData = { ...req.body };
-    
-    // If new file is uploaded, update image path
-    if (req.file) {
-      updateData.image = req.file.path;
-    }
+    const updateData = {
+      ...(req.body.name && { name: req.body.name }),
+      ...(req.body.category && { category: req.body.category }),
+      ...(req.body.description && { description: req.body.description }),
+      ...(req.file && { image: req.file.path }),
+      ...(req.body.image && !req.file && { image: req.body.image })
+    };
 
     const language = await LANGUAGE.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true, runValidators: true }
-    );
+      { 
+        new: true, 
+        runValidators: true,
+        select: 'name category description image createdAt updatedAt'
+      }
+    ).lean();
 
     if (!language) {
       return res.status(404).json({
@@ -126,7 +151,7 @@ exports.update = async (req, res) => {
     console.error('Error updating language:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to update language'
+      message: error.message
     });
   }
 };
@@ -157,7 +182,7 @@ exports.delete = async (req, res) => {
     console.error('Error deleting language:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to delete language'
+      message: error.message
     });
   }
 };

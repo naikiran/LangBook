@@ -1,36 +1,74 @@
 const LanguageDetail = require("../model/langdetail");
 const Language = require("../model/language");
 
-// Create a new language detail
+// Create language detail
 exports.create = async (req, res) => {
   try {
-    // First check if language exists
+    // Check if language exists
     const language = await Language.findById(req.body.languageId);
     if (!language) {
       return res.status(404).json({
-        status: "error",
-        message: "Language not found"
+        status: 'error',
+        message: 'Language not found'
       });
     }
 
-    // Create language detail
-    const languageDetail = new LanguageDetail(req.body);
-    await languageDetail.save();
+    // Check if detail already exists for this language
+    const existingDetail = await LanguageDetail.findOne({ languageId: req.body.languageId });
+    if (existingDetail) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Language detail already exists for this language'
+      });
+    }
 
-    // Update language with reference to detail
-    language.languageDetail = languageDetail._id;
-    await language.save();
+    // Create new language detail with proper structure
+    const detail = await LanguageDetail.create({
+      languageId: req.body.languageId,
+      name: language.name,
+      description: req.body.description || language.description,
+      introduction: {
+        overview: req.body.introduction?.overview || '',
+        keyFeatures: req.body.introduction?.keyFeatures || [],
+        useCases: req.body.introduction?.useCases || [],
+        advantages: req.body.introduction?.advantages || [],
+        disadvantages: req.body.introduction?.disadvantages || []
+      },
+      technicalInfo: {
+        paradigms: req.body.technicalInfo?.paradigms || [],
+        typingDiscipline: req.body.technicalInfo?.typingDiscipline || '',
+        executionModel: req.body.technicalInfo?.executionModel || '',
+        memoryManagement: req.body.technicalInfo?.memoryManagement || '',
+        concurrencyModel: req.body.technicalInfo?.concurrencyModel || '',
+        performance: {
+          strengths: req.body.technicalInfo?.performance?.strengths || [],
+          limitations: req.body.technicalInfo?.performance?.limitations || []
+        }
+      },
+      syntax: {
+        overview: req.body.syntax?.overview || '',
+        basicSyntax: {
+          variables: req.body.syntax?.basicSyntax?.variables || '',
+          dataTypes: req.body.syntax?.basicSyntax?.dataTypes || [],
+          operators: req.body.syntax?.basicSyntax?.operators || [],
+          controlStructures: req.body.syntax?.basicSyntax?.controlStructures || '',
+          functions: req.body.syntax?.basicSyntax?.functions || '',
+          classes: req.body.syntax?.basicSyntax?.classes || ''
+        },
+        advancedConcepts: req.body.syntax?.advancedConcepts || []
+      }
+    });
 
     res.status(201).json({
-      status: "success",
-      message: "Language detail created successfully",
-      data: languageDetail
+      status: 'success',
+      message: 'Language detail created successfully',
+      data: detail
     });
   } catch (error) {
-    console.error("Error creating language detail:", error);
+    console.error('Error creating language detail:', error);
     res.status(500).json({
-      status: "error",
-      message: error.message || "Error creating language detail"
+      status: 'error',
+      message: error.message
     });
   }
 };
@@ -56,29 +94,29 @@ exports.getAll = async (req, res) => {
   }
 };
 
-// Get language detail by ID
+// Get language detail
 exports.getDetail = async (req, res) => {
   try {
     const detail = await LanguageDetail.findById(req.params.id)
-      .populate('languageId');
+      .select('-__v')
+      .lean();
 
     if (!detail) {
       return res.status(404).json({
-        status: "error",
-        message: "Language detail not found"
+        status: 'error',
+        message: 'Language detail not found'
       });
     }
 
     res.status(200).json({
-      status: "success",
-      message: "Language detail fetched successfully",
+      status: 'success',
       data: detail
     });
   } catch (error) {
-    console.error("Error fetching language detail:", error);
+    console.error('Error fetching language detail:', error);
     res.status(500).json({
-      status: "error",
-      message: error.message || "Error fetching language detail"
+      status: 'error',
+      message: error.message
     });
   }
 };
@@ -113,29 +151,60 @@ exports.getDetailByLanguageId = async (req, res) => {
 // Update language detail
 exports.update = async (req, res) => {
   try {
-    const detail = await LanguageDetail.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).populate('languageId');
-
+    const detail = await LanguageDetail.findById(req.params.id);
+    
     if (!detail) {
       return res.status(404).json({
-        status: "error",
-        message: "Language detail not found"
+        status: 'error',
+        message: 'Language detail not found'
       });
     }
 
+    // Update only provided fields while maintaining structure
+    if (req.body.introduction) {
+      detail.introduction = {
+        ...detail.introduction,
+        ...req.body.introduction
+      };
+    }
+
+    if (req.body.technicalInfo) {
+      detail.technicalInfo = {
+        ...detail.technicalInfo,
+        ...req.body.technicalInfo,
+        performance: {
+          ...detail.technicalInfo.performance,
+          ...req.body.technicalInfo?.performance
+        }
+      };
+    }
+
+    if (req.body.syntax) {
+      detail.syntax = {
+        ...detail.syntax,
+        ...req.body.syntax,
+        basicSyntax: {
+          ...detail.syntax.basicSyntax,
+          ...req.body.syntax?.basicSyntax
+        }
+      };
+    }
+
+    // Handle other fields that might be updated
+    if (req.body.description) detail.description = req.body.description;
+
+    await detail.save();
+
     res.status(200).json({
-      status: "success",
-      message: "Language detail updated successfully",
+      status: 'success',
+      message: 'Language detail updated successfully',
       data: detail
     });
   } catch (error) {
-    console.error("Error updating language detail:", error);
+    console.error('Error updating language detail:', error);
     res.status(500).json({
-      status: "error",
-      message: error.message || "Error updating language detail"
+      status: 'error',
+      message: error.message
     });
   }
 };
@@ -144,30 +213,25 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   try {
     const detail = await LanguageDetail.findById(req.params.id);
+    
     if (!detail) {
       return res.status(404).json({
-        status: "error",
-        message: "Language detail not found"
+        status: 'error',
+        message: 'Language detail not found'
       });
     }
 
-    // Remove reference from language
-    await Language.findByIdAndUpdate(detail.languageId, {
-      $unset: { languageDetail: "" }
-    });
-
-    // Delete the detail
-    await detail.remove();
+    await detail.deleteOne();
 
     res.status(200).json({
-      status: "success",
-      message: "Language detail deleted successfully"
+      status: 'success',
+      message: 'Language detail deleted successfully'
     });
   } catch (error) {
-    console.error("Error deleting language detail:", error);
+    console.error('Error deleting language detail:', error);
     res.status(500).json({
-      status: "error",
-      message: error.message || "Error deleting language detail"
+      status: 'error',
+      message: error.message
     });
   }
 };
