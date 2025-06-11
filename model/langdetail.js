@@ -248,20 +248,3 @@ languageDetailSchema.index({
 
 const LanguageDetail = mongoose.model("LanguageDetail", languageDetailSchema);
 module.exports = LanguageDetail;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

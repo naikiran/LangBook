@@ -1,203 +1,173 @@
 const LanguageDetail = require("../model/langdetail");
+const Language = require("../model/language");
 
 // Create a new language detail
 exports.create = async (req, res) => {
   try {
-    // Add metadata
-    req.body.metadata = {
-      lastUpdated: new Date(),
-      contributors: req.body.metadata?.contributors || [{
-        name: "Admin",
-        role: "Creator"
-      }]
-    };
+    // First check if language exists
+    const language = await Language.findById(req.body.languageId);
+    if (!language) {
+      return res.status(404).json({
+        status: "error",
+        message: "Language not found"
+      });
+    }
 
-    const languageDetail = await LanguageDetail.create(req.body);
+    // Create language detail
+    const languageDetail = new LanguageDetail(req.body);
+    await languageDetail.save();
+
+    // Update language with reference to detail
+    language.languageDetail = languageDetail._id;
+    await language.save();
+
     res.status(201).json({
       status: "success",
-      message: "Language detail created successfully!",
-      data: languageDetail,
+      message: "Language detail created successfully",
+      data: languageDetail
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error creating language detail:", error);
     res.status(500).json({
       status: "error",
-      message: error.message || "Internal server error",
+      message: error.message || "Error creating language detail"
     });
   }
 };
 
-// Get all language details with filtering and pagination
+// Get all language details
 exports.getAll = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    // Build filter object
-    const filter = {};
-    if (req.query.paradigm) {
-      filter['technicalInfo.paradigms'] = req.query.paradigm;
-    }
-    if (req.query.category) {
-      filter['applications.domain'] = req.query.category;
-    }
-
-    // Build query
-    const query = LanguageDetail.find(filter)
-      .populate("languageId")
-      .skip(skip)
-      .limit(limit)
-      .sort({ 'metadata.lastUpdated': -1 });
-
-    // Execute query
-    const [details, total] = await Promise.all([
-      query.exec(),
-      LanguageDetail.countDocuments(filter)
-    ]);
+    const details = await LanguageDetail.find()
+      .populate('languageId')
+      .sort('-createdAt');
 
     res.status(200).json({
       status: "success",
       message: "Language details fetched successfully",
-      data: {
-        details,
-        pagination: {
-          currentPage: page,
-          totalPages: Math.ceil(total / limit),
-          totalItems: total,
-          itemsPerPage: limit
-        }
-      }
+      data: details
     });
   } catch (error) {
+    console.error("Error fetching language details:", error);
     res.status(500).json({
       status: "error",
-      message: error.message,
+      message: error.message || "Error fetching language details"
     });
   }
 };
 
-// Get a specific language detail by ID
+// Get language detail by ID
 exports.getDetail = async (req, res) => {
   try {
     const detail = await LanguageDetail.findById(req.params.id)
-      .populate("languageId")
-      .select(req.query.fields ? req.query.fields.split(',').join(' ') : '');
+      .populate('languageId');
 
     if (!detail) {
       return res.status(404).json({
-        status: "fail",
-        message: "Language detail not found",
+        status: "error",
+        message: "Language detail not found"
       });
     }
 
     res.status(200).json({
       status: "success",
-      message: "Language detail found successfully",
-      data: detail,
+      message: "Language detail fetched successfully",
+      data: detail
     });
   } catch (error) {
+    console.error("Error fetching language detail:", error);
     res.status(500).json({
       status: "error",
-      message: error.message,
+      message: error.message || "Error fetching language detail"
     });
   }
 };
 
-// Update a language detail
+// Get language detail by language ID
+exports.getDetailByLanguageId = async (req, res) => {
+  try {
+    const detail = await LanguageDetail.findOne({ languageId: req.params.languageId })
+      .populate('languageId');
+
+    if (!detail) {
+      return res.status(404).json({
+        status: "error",
+        message: "Language detail not found for this language"
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Language detail fetched successfully",
+      data: detail
+    });
+  } catch (error) {
+    console.error("Error fetching language detail:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message || "Error fetching language detail"
+    });
+  }
+};
+
+// Update language detail
 exports.update = async (req, res) => {
   try {
-    // Update metadata
-    req.body.metadata = {
-      ...req.body.metadata,
-      lastUpdated: new Date()
-    };
-
-    const updatedDetail = await LanguageDetail.findByIdAndUpdate(
+    const detail = await LanguageDetail.findByIdAndUpdate(
       req.params.id,
       req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    ).populate("languageId");
+      { new: true, runValidators: true }
+    ).populate('languageId');
 
-    if (!updatedDetail) {
+    if (!detail) {
       return res.status(404).json({
-        status: "fail",
-        message: "Language detail not found",
+        status: "error",
+        message: "Language detail not found"
       });
     }
 
     res.status(200).json({
       status: "success",
       message: "Language detail updated successfully",
-      data: updatedDetail,
+      data: detail
     });
   } catch (error) {
+    console.error("Error updating language detail:", error);
     res.status(500).json({
       status: "error",
-      message: error.message,
+      message: error.message || "Error updating language detail"
     });
   }
 };
 
-// Delete a language detail
+// Delete language detail
 exports.delete = async (req, res) => {
   try {
-    const detail = await LanguageDetail.findByIdAndDelete(req.params.id);
+    const detail = await LanguageDetail.findById(req.params.id);
     if (!detail) {
       return res.status(404).json({
-        status: "fail",
-        message: "Language detail not found",
+        status: "error",
+        message: "Language detail not found"
       });
     }
-    res.status(200).json({
-      status: "success",
-      message: "Language detail deleted successfully",
+
+    // Remove reference from language
+    await Language.findByIdAndUpdate(detail.languageId, {
+      $unset: { languageDetail: "" }
     });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: error.message,
-    });
-  }
-};
 
-// Get language detail by language ID with section filtering
-exports.getDetailByLanguageId = async (req, res) => {
-  try {
-    // Build projection object based on requested sections
-    let projection = {};
-    if (req.query.sections) {
-      const sections = req.query.sections.split(',');
-      sections.forEach(section => {
-        projection[section] = 1;
-      });
-    }
-
-    const detail = await LanguageDetail.findOne({ 
-      languageId: req.params.languageId 
-    })
-    .populate("languageId")
-    .select(projection);
-
-    if (!detail) {
-      return res.status(404).json({
-        status: "fail",
-        message: "Language detail not found for this language",
-      });
-    }
+    // Delete the detail
+    await detail.remove();
 
     res.status(200).json({
       status: "success",
-      message: "Language detail found successfully",
-      data: detail,
+      message: "Language detail deleted successfully"
     });
   } catch (error) {
+    console.error("Error deleting language detail:", error);
     res.status(500).json({
       status: "error",
-      message: error.message,
+      message: error.message || "Error deleting language detail"
     });
   }
 };

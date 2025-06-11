@@ -1,20 +1,23 @@
 const express = require("express");
 const router = express.Router();
-const LCD = require("../controller/langdetail");
+const langDetailController = require("../controller/langdetail");
 
-// Base CRUD routes
-router.post("/create", LCD.create);
-router.get("/", LCD.getAll);
-router.get("/:id", LCD.getDetail);
-router.put("/:id", LCD.update);
-router.delete("/:id", LCD.delete);
+// Create new language detail
+router.post("/create", langDetailController.create);
 
-// Advanced query routes
-router.get("/search/query", LCD.search);
-router.get("/stats/overview", LCD.getStatistics);
-router.get("/related/:id", LCD.getRelatedLanguages);
+// Get all language details
+router.get("/", langDetailController.getAll);
 
-// Language-specific routes
-router.get("/language/:languageId", LCD.getDetailByLanguageId);
+// Get language detail by ID
+router.get("/:id", langDetailController.getDetail);
+
+// Get language detail by language ID
+router.get("/language/:languageId", langDetailController.getDetailByLanguageId);
+
+// Update language detail
+router.put("/:id", langDetailController.update);
+
+// Delete language detail
+router.delete("/:id", langDetailController.delete);
 
 module.exports = router;
