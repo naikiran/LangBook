@@ -1,6 +1,26 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
+const syntaxSchema = new Schema({
+  overview: { type: String, required: true },
+  basicSyntax: {
+    variables: { type: String, default: '' },
+    dataTypes: { type: [String], default: [] },
+    operators: { type: [String], default: [] },
+    controlStructures: { type: String, default: '' },
+    functions: { type: String, default: '' },
+    classes: { type: String, default: '' }
+  },
+  advancedConcepts: {
+    type: [{
+      topic: String,
+      description: String,
+      example: String
+    }],
+    default: []
+  }
+});
+
 const languageDetailSchema = new Schema({
   languageId: {
     type: Schema.Types.ObjectId,
@@ -14,50 +34,53 @@ const languageDetailSchema = new Schema({
   // Basic Information
   introduction: {
     overview: { type: String, required: true },
-    keyFeatures: [String],
-    useCases: [String],
-    advantages: [String],
-    disadvantages: [String]
+    keyFeatures: { type: [String], default: [] },
+    useCases: { type: [String], default: [] },
+    advantages: { type: [String], default: [] },
+    disadvantages: { type: [String], default: [] }
   },
 
   // Technical Details
   technicalInfo: {
-    paradigms: [String],
-    typingDiscipline: String,
-    executionModel: String, // interpreted/compiled/hybrid
-    memoryManagement: String,
-    concurrencyModel: String,
+    paradigms: { type: [String], default: [] },
+    typingDiscipline: { type: String, default: '' },
+    executionModel: { type: String, default: '' },
+    memoryManagement: { type: String, default: '' },
+    concurrencyModel: { type: String, default: '' },
     performance: {
-      strengths: [String],
-      limitations: [String]
+      strengths: { type: [String], default: [] },
+      limitations: { type: [String], default: [] }
     }
   },
 
   // Syntax and Code Examples
   syntax: {
-    overview: { type: String, required: true },
-    basicSyntax: {
-      variables: String,
-      dataTypes: [String],
-      operators: [String],
-      controlStructures: String,
-      functions: String,
-      classes: String
-    },
-    advancedConcepts: [{
-      topic: String,
-      description: String,
-      example: String
-    }]
+    type: syntaxSchema,
+    required: true,
+    default: () => ({
+      overview: '',
+      basicSyntax: {
+        variables: '',
+        dataTypes: [],
+        operators: [],
+        controlStructures: '',
+        functions: '',
+        classes: ''
+      },
+      advancedConcepts: []
+    })
   },
 
-  codeSnippets: [{
-    title: String,
-    description: String,
-    code: String,
-    explanation: String,
-    tags: [String]
-  }],
+  codeSnippets: {
+    type: [{
+      title: String,
+      description: String,
+      code: String,
+      explanation: String,
+      tags: [String]
+    }],
+    default: []
+  },
 
   // Development Tools and Environment
   tooling: {
@@ -235,6 +258,30 @@ const languageDetailSchema = new Schema({
     }],
     tags: [String]
   }
+}, { 
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Middleware to handle string syntax
+languageDetailSchema.pre('save', function(next) {
+  if (typeof this.syntax === 'string') {
+    const overviewText = this.syntax;
+    this.syntax = {
+      overview: overviewText,
+      basicSyntax: {
+        variables: '',
+        dataTypes: [],
+        operators: [],
+        controlStructures: '',
+        functions: '',
+        classes: ''
+      },
+      advancedConcepts: []
+    };
+  }
+  next();
 });
 
 // Add text indexes for better search functionality

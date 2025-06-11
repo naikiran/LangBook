@@ -22,6 +22,23 @@ exports.create = async (req, res) => {
       });
     }
 
+    // Handle syntax field - convert string to proper structure if needed
+    let syntaxData = req.body.syntax;
+    if (typeof syntaxData === 'string') {
+      syntaxData = {
+        overview: syntaxData,
+        basicSyntax: {
+          variables: '',
+          dataTypes: [],
+          operators: [],
+          controlStructures: '',
+          functions: '',
+          classes: ''
+        },
+        advancedConcepts: []
+      };
+    }
+
     // Create new language detail with proper structure
     const detail = await LanguageDetail.create({
       languageId: req.body.languageId,
@@ -45,18 +62,8 @@ exports.create = async (req, res) => {
           limitations: req.body.technicalInfo?.performance?.limitations || []
         }
       },
-      syntax: {
-        overview: req.body.syntax?.overview || '',
-        basicSyntax: {
-          variables: req.body.syntax?.basicSyntax?.variables || '',
-          dataTypes: req.body.syntax?.basicSyntax?.dataTypes || [],
-          operators: req.body.syntax?.basicSyntax?.operators || [],
-          controlStructures: req.body.syntax?.basicSyntax?.controlStructures || '',
-          functions: req.body.syntax?.basicSyntax?.functions || '',
-          classes: req.body.syntax?.basicSyntax?.classes || ''
-        },
-        advancedConcepts: req.body.syntax?.advancedConcepts || []
-      }
+      syntax: syntaxData,
+      codeSnippets: req.body.codeSnippets || []
     });
 
     res.status(201).json({
@@ -108,6 +115,22 @@ exports.getDetail = async (req, res) => {
       });
     }
 
+    // Handle string syntax field
+    if (typeof detail.syntax === 'string') {
+      detail.syntax = {
+        overview: detail.syntax,
+        basicSyntax: {
+          variables: '',
+          dataTypes: [],
+          operators: [],
+          controlStructures: '',
+          functions: '',
+          classes: ''
+        },
+        advancedConcepts: []
+      };
+    }
+
     res.status(200).json({
       status: 'success',
       data: detail
@@ -125,13 +148,29 @@ exports.getDetail = async (req, res) => {
 exports.getDetailByLanguageId = async (req, res) => {
   try {
     const detail = await LanguageDetail.findOne({ languageId: req.params.languageId })
-      .populate('languageId');
+      .lean();
 
     if (!detail) {
       return res.status(404).json({
         status: "error",
         message: "Language detail not found for this language"
       });
+    }
+
+    // Handle string syntax field
+    if (typeof detail.syntax === 'string') {
+      detail.syntax = {
+        overview: detail.syntax,
+        basicSyntax: {
+          variables: '',
+          dataTypes: [],
+          operators: [],
+          controlStructures: '',
+          functions: '',
+          classes: ''
+        },
+        advancedConcepts: []
+      };
     }
 
     res.status(200).json({
@@ -143,7 +182,7 @@ exports.getDetailByLanguageId = async (req, res) => {
     console.error("Error fetching language detail:", error);
     res.status(500).json({
       status: "error",
-      message: error.message || "Error fetching language detail"
+      message: error.message
     });
   }
 };
@@ -158,6 +197,22 @@ exports.update = async (req, res) => {
         status: 'error',
         message: 'Language detail not found'
       });
+    }
+
+    // Handle syntax field if it's a string in the request
+    if (typeof req.body.syntax === 'string') {
+      req.body.syntax = {
+        overview: req.body.syntax,
+        basicSyntax: {
+          variables: '',
+          dataTypes: [],
+          operators: [],
+          controlStructures: '',
+          functions: '',
+          classes: ''
+        },
+        advancedConcepts: []
+      };
     }
 
     // Update only provided fields while maintaining structure
