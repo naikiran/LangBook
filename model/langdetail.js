@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const syntaxSchema = new Schema({
-  overview: { type: String, required: true },
+  overview: { type: String, required: false },
   basicSyntax: {
     variables: { type: String, default: '' },
     dataTypes: { type: [String], default: [] },
@@ -28,12 +28,12 @@ const languageDetailSchema = new Schema({
     required: true,
     index: true
   },
-  name: { type: String, required: true, unique: true },
-  description: { type: String, required: true },
+  name: { type: String, required: false },
+  description: { type: String, required: false },
   
   // Basic Information
   introduction: {
-    overview: { type: String, required: true },
+    overview: { type: String, required: false },
     keyFeatures: { type: [String], default: [] },
     useCases: { type: [String], default: [] },
     advantages: { type: [String], default: [] },
@@ -56,7 +56,7 @@ const languageDetailSchema = new Schema({
   // Syntax and Code Examples
   syntax: {
     type: syntaxSchema,
-    required: true,
+    required: false,
     default: () => ({
       overview: '',
       basicSyntax: {
@@ -134,6 +134,7 @@ const languageDetailSchema = new Schema({
       description: String,
       url: String,
       level: String
+      
     }],
     onlineCourses: [{
       title: String,
@@ -146,9 +147,9 @@ const languageDetailSchema = new Schema({
 
   // Version and Compatibility
   versionInfo: {
-    latestVersion: String,
+    latestVersion: { type: String, default: '' },
     releaseDate: Date,
-    ltsVersion: String,
+    ltsVersion: { type: String, default: '' },
     deprecatedVersions: [{
       version: String,
       endOfSupport: Date
@@ -161,8 +162,8 @@ const languageDetailSchema = new Schema({
 
   // Historical Information
   history: {
-    createdBy: String,
-    firstAppeared: String,
+    createdBy: { type: String, default: '' },
+    firstAppeared: { type: String, default: '' },
     majorReleases: [{
       version: String,
       date: Date,
@@ -262,6 +263,14 @@ const languageDetailSchema = new Schema({
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
+});
+
+// Add virtual for populated language
+languageDetailSchema.virtual('language', {
+  ref: 'Language',
+  localField: 'languageId',
+  foreignField: '_id',
+  justOne: true
 });
 
 // Middleware to handle string syntax
