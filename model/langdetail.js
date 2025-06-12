@@ -120,7 +120,7 @@ const languageDetailSchema = new Schema({
   // Learning Resources
   learningResources: {
     documentation: {
-      official: { type: String, required: true },
+      official: { type: String, required: false },
       tutorials: [{
         title: String,
         description: String,
