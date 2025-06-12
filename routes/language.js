@@ -11,7 +11,7 @@ router.post("/create", upload.single("image"), LC.create);
 router.get("/", LC.getAllLanguages);
 router.get("/:id", LC.getLanguage);
 router.delete("/:id", LC.delete);
-router.put("/:id", upload.single("image"), LC.update);
+router.patch("/:id", upload.single("image"), LC.update);
 
 // Language Detail routes (nested under languages)
 router.post("/:id/details", LCD.create);
